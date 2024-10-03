@@ -21,7 +21,11 @@ client.once('ready', () => {
   
 //   Fetch contests every hour
 //   setInterval(fetchContests, 3600000);
-    fetchContests()  
+fetchContests()
+.then(() => {
+  console.log("Reminders scheduled. Exiting process...");
+  process.exit(0);  
+}) 
 });
 
 async function fetchContests() {
