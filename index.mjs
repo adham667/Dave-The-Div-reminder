@@ -54,7 +54,7 @@ function scheduleReminders(contest, startDate) {
   const contestId = contest.id; // Use contest ID to track scheduled reminders
   const contestName = contest.name;
   const channel = client.channels.cache.find(channel => channel.name === 'div-reminders'); // Replace with your channel ID
-  console.log("hi");
+  //console.log("hi");
   
     // Check if the contest is tommorow
     const currentDate = new Date();
