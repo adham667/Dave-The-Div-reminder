@@ -12,38 +12,35 @@ const client = new Client({
   ],
 });
 
-
-
 client.login(process.env.TOKEN);
 
-client.once('ready', () => {
+client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}!`);
+
+  // Fetch contests and wait for reminders to be scheduled
+  await fetchContests();
   
-//   Fetch contests every hour
-//   setInterval(fetchContests, 3600000);
-fetchContests()
-.then(() => {
-  console.log("Reminders scheduled. Exiting process...");
-  process.exit(0);  
-}) 
+  console.log("All reminders scheduled. Exiting process...");
+  process.exit(0);  // Exit once all reminders are scheduled
 });
 
 async function fetchContests() {
   try {
     const response = await axios.get('https://codeforces.com/api/contest.list');
     const contests = response.data.result;
-    //console.log(contests);
     
     const currentDate = new Date();
 
-    contests.forEach(contest => {
-      const startDate = new Date(contest.startTimeSeconds * 1000); // Convert to milliseconds
+    // Array to store promises for reminder scheduling
+    const reminderPromises = contests
+      .filter(contest => new Date(contest.startTimeSeconds * 1000) > currentDate)  // Only future contests
+      .map(contest => {
+        const startDate = new Date(contest.startTimeSeconds * 1000); // Convert to milliseconds
+        return scheduleReminders(contest, startDate); // Schedule and return a promise
+      });
 
-      // Check if the contest is upcoming
-      if (startDate > currentDate) {
-        scheduleReminders(contest, startDate);
-      }
-    });
+    // Wait for all reminders to be scheduled
+    await Promise.all(reminderPromises);
 
   } catch (error) {
     console.error("Error fetching contests:", error);
@@ -51,22 +48,28 @@ async function fetchContests() {
 }
 
 function scheduleReminders(contest, startDate) {
-  const contestId = contest.id; // Use contest ID to track scheduled reminders
-  const contestName = contest.name;
-  const channel = client.channels.cache.find(channel => channel.name === 'div-reminders'); // Replace with your channel ID
-  //console.log("hi");
-  
-    // Check if the contest is tommorow
-    const currentDate = new Date();
-    const tomorrow = new Date(currentDate);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const isTomorrow = startDate.toDateString() === tomorrow.toDateString();
-    
-    if (isTomorrow) {
-      // Send immediate reminder if the contest is tomorrow
-      channel.send(`@everyone Reminder: ${contestName} starts tomorrow at ${startDate.toLocaleString()}`);
+  return new Promise(async (resolve, reject) => {
+    try {
+      const contestName = contest.name;
+      const channel = client.channels.cache.find(channel => channel.name === 'div-reminders'); // Replace with your channel name or ID
+      
+      const currentDate = new Date();
+      const tomorrow = new Date(currentDate);
+      tomorrow.setDate(tomorrow.getDate() + 1); // Set for tomorrow
+      
+      const isTomorrow = startDate.toDateString() === tomorrow.toDateString();
+
+      if (isTomorrow && channel) {
+        // Send reminder if the contest is tomorrow
+        await channel.send(`@everyone Reminder: ${contestName} starts tomorrow at ${startDate.toLocaleString()}`);
+      }
+      
+      resolve();  // Resolve the promise once the reminder is sent
+    } catch (error) {
+      console.error("Error scheduling reminder:", error);
+      reject(error);  // Reject the promise if there is an error
     }
+  });
 }
 
 client.on("messageCreate", async (message) => {
