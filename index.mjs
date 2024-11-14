@@ -35,7 +35,7 @@ async function fetchContests() {
     const reminderPromises = contests
       .filter(contest => new Date(contest.startTimeSeconds * 1000) > currentDate)  // Only future contests
       .map(contest => {
-        const startDate = new Date(contest.startTimeSeconds * 1000 + 60*60*1000); // Convert to milliseconds
+        const startDate = new Date(contest.startTimeSeconds * 1000 + 2*60*60*1000); // Convert to milliseconds
         return scheduleReminders(contest, startDate); // Schedule and return a promise
       });
 
