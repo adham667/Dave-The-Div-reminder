@@ -61,7 +61,8 @@ function scheduleReminders(contest, startDate) {
 
       if (isTomorrow && channel) {
         // Send reminder if the contest is tomorrow
-        await channel.send(`@everyone Reminder: ${contestName} starts tomorrow at ${startDate.toLocaleString()}`);
+        const adjustedStartDate = new Date(startDate.getTime() + 1 * 60 * 60 * 1000);
+        await channel.send(`@everyone Reminder: ${contestName} starts tomorrow at ${adjustedStartDate.toLocaleString()}`);
       }
       
       resolve();  // Resolve the promise once the reminder is sent
